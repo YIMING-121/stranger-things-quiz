@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>怪奇物语性格评估 - 输入打开异世界的钥匙</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --st-red: #e11d21; --st-bg: #050505; --st-panel: #0a0a0a; --st-border: #331111; }
+        body { background-color: var(--st-bg); color: #ccc; font-family: "Microsoft YaHei", sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; padding: 20px 0; }
+        
+        #main-container { max-width: 800px; width: 100%; background: var(--st-panel); border: 1px solid var(--st-border); box-shadow: 0 0 50px rgba(225,29,33,0.1); padding: 40px; position: relative; box-sizing: border-box; }
+        
+        /* 主页样式 */
+        .home-section { text-align: center; }
+        .title-main { color: #fff; font-size: 1.8rem; letter-spacing: 5px; margin-bottom: 20px; text-transform: uppercase; }
+        .start-btn { background: var(--st-red); color: #fff; border: none; padding: 15px 60px; font-size: 1.2rem; cursor: pointer; border-radius: 50px; box-shadow: 0 0 20px var(--st-red); transition: 0.3s; margin: 20px 0; }
+        .start-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
+        
+        .info-block { text-align: left; margin-top: 40px; }
+        .info-header { display: flex; align-items: center; color: var(--st-red); font-size: 1.1rem; margin-bottom: 15px; font-weight: bold; }
+        .info-header span { margin-right: 10px; border: 1px solid var(--st-red); padding: 2px 8px; border-radius: 4px; }
+        .desc-text { color: #888; line-height: 1.8; margin-bottom: 30px; font-size: 0.95rem; }
+        
+        .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 40px; }
+        .dim-item { border: 1px solid #1a1a1a; padding: 15px; border-radius: 8px; background: rgba(255,255,255,0.02); }
+        .dim-name { color: var(--st-red); margin-bottom: 5px; font-size: 1rem; }
+        .dim-detail { color: #666; font-size: 0.85rem; }
+        
+        .meta-list { border-top: 1px solid #1a1a1a; padding-top: 20px; }
+        .meta-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 0.9rem; color: #555; }
+        .meta-val { color: #aaa; }
+        /* 答题页样式 */
+        #quiz-section { display: none; }
+        .progress-bar { height: 2px; background: #111; width: 100%; margin: 30px 0; }
+        #progress-fill { height: 100%; background: var(--st-red); width: 0%; transition: 0.3s; }
+        .q-num { color: var(--st-red); font-size: 0.9rem; margin-bottom: 10px; }
+        .q-text { font-size: 1.3rem; color: #fff; line-height: 1.5; margin-bottom: 15px; min-height: 80px; }
+        /* 题目维度提示样式 */
+        .q-dim-tip { color: #888; font-size: 0.85rem; margin-bottom: 20px; }
+        .q-dim-tip span { color: var(--st-red); font-weight: bold; }
+        .opt-list { display: grid; gap: 15px; margin-bottom: 30px; }
+        .opt-btn { background: #0f0f0f; border: 1px solid #222; color: #999; padding: 18px; text-align: left; cursor: pointer; transition: 0.2s; font-size: 1rem; border-radius: 4px; }
+        /* 选项分数提示样式 */
+        .opt-score-tag { color: #e11d2180; font-size: 0.8rem; margin-left: 10px; }
+        .opt-btn:hover { border-color: var(--st-red); color: #fff; background: rgba(225,29,33,0.05); }
+        /* 选中选项样式 */
+        .opt-btn.active { background: rgba(225,29,33,0.15); border: 1px solid var(--st-red); color: #fff; box-shadow: 0 0 8px rgba(225,29,33,0.2); }
+        /* 导航按钮样式：仅保留上一题按钮 */
+        .nav-btns { display: flex; justify-content: flex-start; }
+        .nav-btn { padding: 10px 30px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .prev-btn { background: #1a1a1a; border: 1px solid #333; color: #aaa; }
+        .prev-btn:hover { background: #2a2a2a; border-color: #444; color: #fff; }
+        .nav-btn:disabled { background: #111; border-color: #222; color: #444; cursor: not-allowed; }
+        
+        /* 结果页样式 */
+        #result-section { display: none; text-align: center; }
+        .radar-box { width: 100%; max-width: 450px; margin: 0 auto; }
+        /* 角色图片样式 */
+        .character-img-box { 
+            width: 180px; 
+            height: 180px; 
+            margin: 0 auto 20px; 
+            border-radius: 50%; 
+            overflow: hidden; 
+            border: 2px solid var(--st-red); 
+            box-shadow: 0 0 15px rgba(225,29,33,0.3);
+        }
+        .character-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            transition: transform 0.3s ease;
+        }
+        .character-img-box:hover .character-img {
+            transform: scale(1.05);
+        }
+        .similarity-rate { font-size: 1.8rem; color: var(--st-red); margin: 20px 0; font-weight: bold; }
+        .role-res { font-size: 2.2rem; color: var(--st-red); margin: 15px 0; font-weight: bold; }
+        .analysis-text { background: #0f0f0f; padding: 25px; text-align: left; border-left: 4px solid var(--st-red); color: #aaa; line-height: 1.8; margin: 30px 0; }
+        /* 维度数值展示样式 */
+        .dim-scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px; }
+        .dim-score-item { text-align: center; }
+        .dim-score-name { font-size: 0.9rem; color: #888; margin-bottom: 5px; }
+        .dim-score-value { font-size: 1.1rem; color: var(--st-red); font-weight: bold; }
+    </style>
+</head>
+<body>
+<div id="main-container">
+    <div id="home-section" class="home-section">
+        <h1 class="title-main">输入打开异世界的钥匙</h1>
+        <button class="start-btn" onclick="startQuiz()">开始测试</button>
+        <p style="color: #444; font-size: 0.8rem;">邀请码已校准</p>
+        <div class="info-block">
+            <div class="info-header"><span>目</span> 测试说明</div>
+            <div class="desc-text">
+                本测试基于《怪奇物语》剧中人物性格设计，通过 48 道情景选择题评估你的行为模式、思维方式、情感反应和价值取向。请选择最符合你真实反应的选项，而非你认为“应该”选择的选项。
+            </div>
+            <div class="info-header"><span>G</span> 评估维度</div>
+            <div class="dim-grid">
+                <div class="dim-item"><div class="dim-name">行动力</div><div class="dim-detail">面对危机时的决策速度与执行力</div></div>
+                <div class="dim-item"><div class="dim-name">合作性</div><div class="dim-detail">团队协作与沟通能力</div></div>
+                <div class="dim-item"><div class="dim-name">守护欲</div><div class="dim-detail">对重要之人的保护意识</div></div>
+                <div class="dim-item"><div class="dim-name">成就欲</div><div class="dim-detail">追求目标与自我实现的动力</div></div>
+                <div class="dim-item"><div class="dim-name">稳定性</div><div class="dim-detail">情绪调节与压力应对能力</div></div>
+                <div class="dim-item"><div class="dim-name">共情力</div><div class="dim-detail">理解他人情绪与感受的能力</div></div>
+                <div class="dim-item"><div class="dim-name">逻辑性</div><div class="dim-detail">理性分析与策略规划能力</div></div>
+                <div class="dim-item"><div class="dim-name">直觉性</div><div class="dim-detail">凭借第六感做出快速判断的能力</div></div>
+            </div>
+            <div class="meta-list">
+                <div class="meta-row"><span>预计用时</span><span class="meta-val">约 10-15 分钟</span></div>
+                <div class="meta-row"><span>题目类型</span><span class="meta-val">48道选择题（维度随机混杂）</span></div>
+                <div class="meta-row"><span>结果展示</span><span class="meta-val">角色匹配概率 + 八维雷达图 + 性格解析</span></div>
+            </div>
+        </div>
+    </div>
+    <div id="quiz-section">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <div class="q-num" id="q-idx">ANALYZING STEP: 1 / 48</div>
+        <div class="q-text" id="q-text">正在初始化场景...</div>
+        <!-- 题目维度提示容器 -->
+        <div class="q-dim-tip" id="q-dim-tip"></div>
+        <div class="opt-list" id="opt-list"></div>
+        <!-- 导航按钮：仅保留上一题 -->
+        <div class="nav-btns">
+            <button class="nav-btn prev-btn" onclick="goToPrev()" disabled>上一题</button>
+        </div>
+    </div>
+    <div id="result-section">
+        <h1 style="color: #fff; letter-spacing: 3px;">评估报告</h1>
+        <!-- 角色图片容器 -->
+        <div class="character-img-box" id="character-img-box">
+            <img src="" alt="" class="character-img" id="character-img">
+        </div>
+        <div class="radar-box"><canvas id="radarChart"></canvas></div>
+        <!-- 维度数值展示 -->
+        <div class="dim-scores" id="dim-scores"></div>
+        <div style="margin-top: 10px; font-size: 1rem; color: #666;">你的灵魂契合角色是</div>
+        <div id="role-name" class="role-res">载入中...</div>
+        <div id="role-analysis" class="analysis-text"></div>
+        <button class="start-btn" style="padding: 10px 30px; font-size: 0.9rem;" onclick="location.reload()">重新测试</button>
+    </div>
+</div>
+<script>
+// ==========================================
+// 1. 核心数据与角色定义 (保持与雷达图 min:4, max:8 量纲匹配)
+// ==========================================
+const dimNames = ["行动力", "合作性", "守护欲", "成就欲", "稳定性", "共情力", "逻辑性", "直觉性"];
+
+const characterDimensionScores = {
+    "Eleven": [6, 4, 8, 5, 4, 7, 4, 8],     // 极高守护与直觉
+    "Mike": [7, 8, 7, 6, 6, 6, 5, 6],       // 领导力与协作
+    "Will": [4, 7, 7, 5, 6, 8, 5, 8],       // 高共情与敏感度
+    "Dustin": [5, 8, 4, 7, 7, 6, 8, 5],     // 逻辑之王
+    "Lucas": [8, 6, 6, 7, 8, 5, 7, 5],      // 稳定与行动派
+    "Max": [8, 5, 6, 6, 7, 6, 6, 7],        // 独立与高行动力
+    "Nancy": [7, 5, 6, 8, 7, 5, 8, 6],      // 成就驱动与调查逻辑
+    "Steve": [8, 8, 8, 6, 7, 7, 5, 5],      // 极致守护
+    "Jonathan": [5, 6, 7, 5, 8, 8, 6, 7]    // 幕后守护与深度共情
+};
+
+const characterAnalysis = {
+    "Eleven": "你拥有超越常人的本能。虽然不善言辞，但为了守护重要的事物，你可以爆发出惊人的力量。",
+    "Mike": "你是团队的黏合剂。在危机中，你总能坚定地相信同伴，并指引大家共同前进。",
+    "Will": "你是灵魂的感知者。敏锐的直觉让你能察觉到最细微的黑暗，同时也让你比别人更懂温柔。",
+    "Dustin": "逻辑和好奇心是你的超能力。你相信科学和规律，总能用聪明才智化解僵局。",
+    "Lucas": "你是坚实的后盾。在所有人慌乱时，你的务实和冷静是团队幸存的关键。",
+    "Max": "你有着最坚硬的外壳和最炽热的心。独立、不服输，是你面对这个世界最美的姿态。",
+    "Nancy": "真相是你永远的追求。你精准的逻辑和不达目的不罢休的韧性，让你无往不利。",
+    "Steve": "从‘国王’到‘保姆’，你完成了最伟大的转变。责任感让你成为了最可靠的保护者。",
+    "Jonathan": "你习惯在边缘观察，而非在中心发光。你深沉的爱和同理心是你守护家人的方式。"
+};
+
+// 角色插画链接
+const characterImages = {
+    "Eleven": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E5%B0%8F11.png",
+    "Mike": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E9%BA%A6%E5%85%8B.png",
+    "Will": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E5%A8%81%E5%B0%94.png",
+    "Dustin": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E8%BE%BE%E6%96%AF%E6%B1%80.png",
+    "Lucas": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E5%8D%A2%E5%8D%A1%E6%96%AF.png",
+    "Max": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E9%BA%A6%E5%85%8B%E6%96%AF.png",
+    "Nancy": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E5%8D%97%E5%B8%8C.png",
+    "Steve": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E5%8F%B2%E8%92%82%E5%A4%AB.png",
+    "Jonathan": "https://gqwy-test-1394808458.cos.ap-shanghai.myqcloud.com/%E4%B9%94%E7%BA%B3%E6%A3%AE.png"
+};
+
+// 角色中文名映射
+const characterCnNames = {
+    "Eleven": "Eleven (小十一)",
+    "Mike": "Mike (麦克)",
+    "Will": "Will (威尔)",
+    "Dustin": "Dustin (达斯汀)",
+    "Lucas": "Lucas (卢卡斯)",
+    "Max": "Max (麦克斯)",
+    "Nancy": "Nancy (南希)",
+    "Steve": "Steve (史蒂夫)",
+    "Jonathan": "Jonathan (乔纳森)"
+};
+
+// ==========================================
+// 2. 48道情景题完整数据 (修复格式并标准化分数)
+// ==========================================
+const rawScenarios = [
+    {q:"朋友说“怪物在追我”，你会？",a:"直接冲出去找朋友，不管自己安危",b:"拿上武器，让其他人一起跟你走", da: {dim:0, score:7}, db: {dim:0, score:5}}, // 行动力
+    {q:"团队讨论“怎么潜入实验室”，你会？",a:"先听所有人的想法，再补充方案",b:"说“Mike（队长）你决定吧，我都听”", da: {dim:1, score:8}, db: {dim:1, score:5}}, // 合作性
+    {q:"朋友被坏人威胁“交出东西”，你会？",a:"直接挡在朋友前面",b:"偷偷绕到坏人后面准备偷袭", da: {dim:2, score:8}, db: {dim:2, score:6}}, // 守护欲
+    {q:"团队成功救了人，你最开心的是？",a:"“是我想到的关键办法”",b:"“我们一起做到了”", da: {dim:3, score:7}, db: {dim:3, score:5}}, // 成就欲
+    {q:"计划突然被打乱（比如工具坏了），你会？",a:"冷静说“别慌，用XX代替试试”",b:"紧张地搓手“现在怎么办”", da: {dim:4, score:7}, db: {dim:4, score:4}}, // 稳定性
+    {q:"朋友因为害怕躲起来哭，你会？",a:"拍他肩膀“我懂你的感受”",b:"讲个冷笑话试图让他笑", da: {dim:5, score:8}, db: {dim:5, score:6}}, // 共情力
+    {q:"要破解神秘机关，你会？",a:"先观察结构分析原理",b:"直接上手试，按错再调整", da: {dim:6, score:8}, db: {dim:6, score:5}}, // 逻辑性
+    {q:"走进陌生房间觉得“有问题”，你会？",a:"立刻退出去",b:"喊大家别进来，自己先进去探路", da: {dim:7, score:7}, db: {dim:7, score:5}}, // 直觉性
+    {q:"遇到特别难的事，你会？",a:"深呼吸分步骤解决",b:"哭着找朋友帮忙", da: {dim:4, score:7}, db: {dim:4, score:4}}, // 稳定性
+    {q:"队友的方案和你的不一样，你会？",a:"说“我们试试结合两个方案？”",b:"说“那听你的吧，我没意见”", da: {dim:1, score:7}, db: {dim:1, score:5}}, // 合作性
+    {q:"突然撞见神秘生物，你第一反应是？",a:"立刻拉身边人跑",b:"抄起旁边的棒球棍应对", da: {dim:0, score:6}, db: {dim:0, score:8}}, // 行动力
+    {q:"你做了一件事，最希望听到？",a:"“你太厉害了，全靠你”",b:"“我们配合得真好”", da: {dim:3, score:7}, db: {dim:3, score:5}}, // 成就欲
+    {q:"朋友说“我很难过”，你会？",a:"说“你跟我说说怎么了”",b:"说“我给你买好吃的吧”", da: {dim:5, score:8}, db: {dim:5, score:6}}, // 共情力
+    {q:"朋友丢了东西，你会？",a:"问“你最后一次见它是在哪”",b:"陪他一起到处找", da: {dim:6, score:7}, db: {dim:6, score:5}}, // 逻辑性
+    {q:"你第一次见某个人觉得“不对劲”，会？",a:"离他远远的",b:"观察他的行为验证感觉", da: {dim:7, score:6}, db: {dim:7, score:8}}, // 直觉性
+    {q:"陌生人和朋友搭话，看起来不怀好意，你会？",a:"走过去搂住朋友",b:"站在旁边盯着陌生人", da: {dim:2, score:7}, db: {dim:2, score:5}}, // 守护欲
+    {q:"团队需要有人去危险区域探路，你会？",a:"直接举手“我去”",b:"问“有什么装备？”", da: {dim:0, score:8}, db: {dim:0, score:6}}, // 行动力
+    {q:"队友执行任务时出错了，你会？",a:"说“没事，我们调整一下”",b:"帮他圆场“是意外，不怪他”", da: {dim:1, score:7}, db: {dim:1, score:5}}, // 合作性
+    {q:"团队任务失败，你会想？",a:"“都怪XX没听我的”",b:"“我们哪里没做好？下次改进”", da: {dim:3, score:6}, db: {dim:3, score:8}}, // 成就欲
+    {q:"你在做重要的事被打断，你会？",a:"说“等我做完这部分”",b:"停下来问“怎么了？”", da: {dim:4, score:7}, db: {dim:4, score:5}}, // 稳定性
+    {q:"看到别人受伤，你会？",a:"立刻找药帮他处理",b:"皱着眉说“好疼啊”", da: {dim:5, score:7}, db: {dim:5, score:8}}, // 共情力
+    {q:"做决定前，你会？",a:"分析“这么做的好处和风险”",b:"问“大家觉得怎么样”", da: {dim:6, score:8}, db: {dim:6, score:6}}, // 逻辑性
+    {q:"做选择时，你经常？",a:"凭第一感觉选",b:"先凭感觉选，再用逻辑验证", da: {dim:7, score:7}, db: {dim:7, score:8}}, // 直觉性
+    {q:"朋友害怕不敢做某件事，你会？",a:"说“别怕，我在你身边”",b:"说“没事，我先做给你看”", da: {dim:2, score:8}, db: {dim:2, score:6}}, // 守护欲
+    {q:"发现朋友被怪物抓住，你会？",a:"立刻冲上去拽朋友",b:"找机会用东西砸怪物", da: {dim:0, score:8}, db: {dim:0, score:6}}, // 行动力
+    {q:"团队需要分工，你会？",a:"选自己擅长的",b:"说“我都行，分配什么做什么”", da: {dim:1, score:6}, db: {dim:1, score:8}}, // 合作性
+    {q:"有人说“你做不到这件事”，你会？",a:"偏要做，证明给他看",b:"说“我试试，不行再找别人帮忙”", da: {dim:3, score:8}, db: {dim:3, score:6}}, // 成就欲
+    {q:"别人对你发脾气，你会？",a:"等他冷静了再沟通",b:"委屈地哭", da: {dim:4, score:8}, db: {dim:4, score:5}}, // 稳定性
+    {q:"朋友因为失败自责，你会？",a:"说“不是你的错，我们都有责任”",b:"说“我知道你很难过”", da: {dim:5, score:7}, db: {dim:5, score:8}}, // 共情力
+    {q:"你更相信？",a:"数据、逻辑",b:"经验、大家的意见", da: {dim:6, score:8}, db: {dim:6, score:6}}, // 逻辑性
+    {q:"你会因为“感觉不对”放弃做某件事吗？",a:"会，感觉不对肯定有问题",b:"会，但会先确认一下", da: {dim:7, score:6}, db: {dim:7, score:8}}, // 直觉性
+    {q:"团队里年纪最小的成员害怕哭了，你会？",a:"把他抱在怀里",b:"给他递零食/玩具", da: {dim:2, score:8}, db: {dim:2, score:6}}, // 守护欲
+    {q:"紧急情况下需要立刻做决定，你会？",a:"1秒内说出方案",b:"快速想2个选项让大家选", da: {dim:0, score:8}, db: {dim:0, score:6}}, // 行动力
+    {q:"新成员加入团队，你会？",a:"主动介绍自己",b:"对他笑一下，继续做自己的事", da: {dim:1, score:8}, db: {dim:1, score:5}}, // 合作性
+    {q:"完成任务后，你会？",a:"跟别人讲“我当时多厉害”",b:"总结经验，准备下一次", da: {dim:3, score:6}, db: {dim:3, score:8}}, // 成就欲
+    {q:"你在很紧张的情况下，会？",a:"说话变慢，更冷静",b:"说不出话，手心出汗", da: {dim:4, score:8}, db: {dim:4, score:5}}, // 稳定性
+    {q:"你会主动关心的人是？",a:"正在难过的人",b:"所有朋友", da: {dim:5, score:7}, db: {dim:5, score:8}}, // 共情力
+    {q:"遇到陌生的东西，你会？",a:"研究它的原理",b:"问别人“这是什么”", da: {dim:6, score:8}, db: {dim:6, score:6}}, // 逻辑性
+    {q:"朋友说“这个计划没问题”但你感觉危险，会？",a:"坚持反对",b:"说“我们再检查一遍吧”", da: {dim:7, score:6}, db: {dim:7, score:8}}, // 直觉性
+    {q:"朋友的秘密被别人说出去，你会？",a:"找说秘密的人算账",b:"安慰朋友“别理他们”", da: {dim:2, score:7}, db: {dim:2, score:9}}, // 守护欲 (修正分数到4-8区间)
+    {q:"怪物突然冲破门，你会？",a:"推开门把怪物引开",b:"堵在门口，让大家从窗户走", da: {dim:0, score:7}, db: {dim:0, score:8}}, // 行动力
+    {q:"队友坚持要做危险的事，你会？",a:"说“我陪你一起去”",b:"说“那你小心点”", da: {dim:1, score:8}, db: {dim:1, score:6}}, // 合作性
+    {q:"你最在意的是？",a:"自己的“厉害”被别人认可",b:"团队的目标能不能实现", da: {dim:3, score:6}, db: {dim:3, score:8}}, // 成就欲
+    {q:"你弄丢了重要的东西，会？",a:"冷静找，回忆“可能丢在哪里”",b:"急得哭，找朋友帮忙", da: {dim:4, score:8}, db: {dim:4, score:5}}, // 稳定性
+    {q:"朋友和你吐槽“讨厌的人”，你会？",a:"说“他为什么这么做？你别生气了”",b:"跟着一起吐槽", da: {dim:5, score:6}, db: {dim:5, score:8}}, // 共情力
+    {q:"你解决问题的方式是？",a:"先想“为什么会出现这个问题”",b:"先想“别人是怎么解决的”", da: {dim:6, score:8}, db: {dim:6, score:6}}, // 逻辑性
+    {q:"你会相信“第六感”吗？",a:"特别相信，每次都准",b:"半信半疑，偶尔参考", da: {dim:7, score:7}, db: {dim:7, score:5}}, // 直觉性
+    {q:"朋友想做危险的事证明自己，你会？",a:"直接把他拉走",b:"说“你想清楚了吗？”", da: {dim:2, score:8}, db: {dim:2, score:6}}, // 守护欲
+    {q:"听到朋友在另一个房间喊“救命”，你会？",a:"直接撞开门进去",b:"找钥匙/工具开门", da: {dim:0, score:8}, db: {dim:0, score:6}}, // 行动力
+    {q:"团队意见分歧很大，你会？",a:"说“我们投票决定吧”",b:"说“大家冷静点，都说说理由”", da: {dim:1, score:7}, db: {dim:1, score:8}}, // 合作性
+    {q:"你会主动做的事是？",a:"能证明自己能力的事",b:"能帮团队的事", da: {dim:3, score:6}, db: {dim:3, score:8}}, // 成就欲
+    {q:"被别人误会，你会？",a:"等对方冷静了再慢慢解释",b:"委屈地不说话", da: {dim:4, score:8}, db: {dim:4, score:5}}, // 稳定性
+    {q:"你能快速察觉到？",a:"别人是不是难过",b:"别人是不是需要帮忙", da: {dim:5, score:8}, db: {dim:5, score:6}}, // 共情力
+    {q:"你会记下来的是？",a:"重要的规律、原理",b:"团队的计划、分工", da: {dim:6, score:7}, db: {dim:6, score:8}}, // 逻辑性
+    {q:"你遇到危险，逃生方向来自？",a:"直觉“往那边跑是对的”",b:"观察“那边有出口”", da: {dim:7, score:7}, db: {dim:7, score:5}}, // 直觉性
+    {q:"计划好的逃生路线被堵死，你会？",a:"立刻选新路线，边跑边说“跟我来”",b:"让大家停住，快速观察周围出口", da: {dim:0, score:8}, db: {dim:0, score:6}}, // 行动力
+    {q:"任务完成后，队友抢了你的功劳，你会？",a:"笑着说“是我们一起做的”",b:"不说话，心里有点不舒服", da: {dim:1, score:8}, db: {dim:1, score:5}}, // 合作性
+    {q:"看到陌生人陷入困境，你会？",a:"犹豫后还是上前帮忙",b:"立刻上前询问情况", da: {dim:5, score:6}, db: {dim:5, score:8}}, // 共情力
+    {q:"分析线索时，你更依赖？",a:"数据和逻辑推导",b:"大家的经验总结", da: {dim:6, score:7}, db: {dim:6, score:5}}, // 逻辑性
+    {q:"进入未知区域前，你会？",a:"凭直觉判断“这里安全吗”",b:"自己先探路确认安全", da: {dim:7, score:6}, db: {dim:7, score:7}}  // 直觉性
+];
+
+// 初始化题目数组（48道题）
+let questions = [];
+// 标准化题目数据，修复分数超出4-8区间的问题
+rawScenarios.forEach((scenario, idx) => {
+    // 确保分数在4-8区间内
+    const fixScore = (score) => Math.min(8, Math.max(4, score));
+    questions.push({
+        q: scenario.q,
+        a: scenario.a,
+        b: scenario.b,
+        da: scenario.da.dim,
+        db: scenario.db.dim,
+        sa: fixScore(scenario.da.score),
+        sb: fixScore(scenario.db.score),
+        dimName: dimNames[scenario.da.dim] // 记录本题主要评估维度
+    });
+});
+
+// ==========================================
+// 3. 运行逻辑 (适配48题，保留所有交互功能)
+// ==========================================
+let currentIdx = 0;
+let userScores = new Array(8).fill(0);
+let dimCounts = new Array(8).fill(0);
+// 存储用户历史选择（用于上一题回溯）
+let userSelections = new Array(48).fill(null);
+
+function startQuiz() {
+    document.getElementById('home-section').style.display = 'none';
+    document.getElementById('quiz-section').style.display = 'block';
+    showQuestion();
+}
+
+function showQuestion() {
+    const q = questions[currentIdx];
+    // 更新题目序号和进度条
+    document.getElementById('q-idx').innerText = `ANALYZING STEP: ${currentIdx + 1} / 48`;
+    document.getElementById('progress-fill').style.width = ((currentIdx) / 48 * 100) + '%';
+    // 更新题目内容
+    document.getElementById('q-text').innerText = q.q;
+    
+    // 渲染题目维度提示
+    document.getElementById('q-dim-tip').innerHTML = `本题评估维度：<span>${q.dimName}</span>`;
+    
+    const optionList = document.getElementById('opt-list');
+    // 获取当前题目的用户选择
+    const userChoice = userSelections[currentIdx];
+    
+    // 判断A/B选项是否被选中
+    const isOptionASelected = (userChoice === 'a');
+    const isOptionBSelected = (userChoice === 'b');
+    
+    // 渲染选项（显示分数提示）
+    optionList.innerHTML = `
+        <button class="opt-btn ${isOptionASelected ? 'active' : ''}" onclick="selectOption('a')">
+            A. ${q.a}
+            <span class="opt-score-tag">${q.dimName} ${q.sa}分</span>
+        </button>
+        <button class="opt-btn ${isOptionBSelected ? 'active' : ''}" onclick="selectOption('b')">
+            B. ${q.b}
+            <span class="opt-score-tag">${q.dimName} ${q.sb}分</span>
+        </button>
+    `;
+    
+    // 更新导航按钮状态
+    updateNavButtons();
+}
+
+function selectOption(choice) {
+    const q = questions[currentIdx];
+    // 记录用户选择（用于回溯）
+    const prevChoice = userSelections[currentIdx];
+    
+    // 移除之前该题的分数（如果有）
+    if (prevChoice !== null) {
+        const prevDim = prevChoice === 'a' ? q.da : q.db;
+        const prevScore = prevChoice === 'a' ? q.sa : q.sb;
+        userScores[prevDim] -= prevScore;
+        dimCounts[prevDim]--;
+    }
+    
+    // 记录新选择并累加分数
+    userSelections[currentIdx] = choice;
+    const dim = choice === 'a' ? q.da : q.db;
+    const score = choice === 'a' ? q.sa : q.sb;
+    
+    userScores[dim] += score;
+    dimCounts[dim]++;
+
+    // 更新按钮样式
+    const options = document.querySelectorAll('.opt-btn');
+    options.forEach(opt => opt.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // 自动跳转下一题（添加延迟保留视觉反馈）
+    setTimeout(() => {
+        if (currentIdx < 47) {
+            currentIdx++;
+            showQuestion();
+        } else {
+            calculateResult();
+        }
+    }, 300);
+    
+    // 更新导航按钮状态
+    updateNavButtons();
+}
+
+// 更新导航按钮状态（仅处理上一题）
+function updateNavButtons() {
+    const prevBtn = document.querySelector('.prev-btn');
+    prevBtn.disabled = currentIdx === 0;
+}
+
+// 跳转到上一题（回溯重选）
+function goToPrev() {
+    if (currentIdx > 0) {
+        currentIdx--;
+        showQuestion();
+    }
+}
+
+function calculateResult() {
+    // 算法核心优化：将累加分转化为均分，映射到角色基准分的 4-8 区间
+    const finalUserVector = userScores.map((total, i) => {
+        let avg = dimCounts[i] === 0 ? 6 : (total / dimCounts[i]);
+        // 缩放修正：确保用户得分在 4-8 范围内波动
+        return Math.min(8, Math.max(4, avg)); 
+    });
+
+    let matchedChar = "";
+    let minDistance = Infinity;
+
+    // 欧几里得距离计算
+    for (let charName in characterDimensionScores) {
+        let charVector = characterDimensionScores[charName];
+        let distance = Math.sqrt(charVector.reduce((acc, val, i) => acc + Math.pow(val - finalUserVector[i], 2), 0));
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            matchedChar = charName;
+        }
+    }
+    renderResult(matchedChar, finalUserVector, minDistance);
+}
+
+function renderResult(matchedChar, finalUserVector, minDistance) {
+    document.getElementById('quiz-section').style.display = 'none';
+    document.getElementById('result-section').style.display = 'block';
+    
+    // 渲染角色图片
+    const charImgEl = document.getElementById('character-img');
+    charImgEl.src = characterImages[matchedChar];
+    charImgEl.alt = characterCnNames[matchedChar];
+    
+    // 渲染维度分数展示
+    const dimScoresEl = document.getElementById('dim-scores');
+    let dimHtml = '';
+    finalUserVector.forEach((score, idx) => {
+        dimHtml += `
+            <div class="dim-score-item">
+                <div class="dim-score-name">${dimNames[idx]}</div>
+                <div class="dim-score-value">${score.toFixed(1)}分</div>
+            </div>
+        `;
+    });
+    dimScoresEl.innerHTML = dimHtml;
+
+    // 更新角色信息（显示中英文名称）
+    document.getElementById('role-name').innerText = characterCnNames[matchedChar];
+    document.getElementById('role-analysis').innerHTML = `<b>契合分析：</b>${characterAnalysis[matchedChar]}`;
+
+    // 计算并展示相似度百分比（40%-90%区间）
+    const maxPossibleDistance = Math.sqrt(8 * Math.pow(4, 2)); // 最大可能距离
+    const similarityScore = Math.round(Math.max(40, Math.min(90, 100 - (minDistance / maxPossibleDistance) * 60)));
+    // 动态添加相似度元素
+    if (!document.getElementById('similarity-rate')) {
+        const radarBox = document.querySelector('.radar-box');
+        const similarityEl = document.createElement('div');
+        similarityEl.id = 'similarity-rate';
+        similarityEl.className = 'similarity-rate';
+        radarBox.after(similarityEl);
+    }
+    document.getElementById('similarity-rate').innerText = `相似度：${similarityScore}%`;
+
+    // 严格保持 Chart 配置
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: dimNames,
+            datasets: [
+                {
+                    label: '你的性格图谱',
+                    data: finalUserVector,
+                    backgroundColor: 'rgba(225, 29, 33, 0.2)',
+                    borderColor: '#e11d21',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#e11d21'
+                },
+                {
+                    label: characterCnNames[matchedChar] + ' 的性格',
+                    data: characterDimensionScores[matchedChar],
+                    backgroundColor: 'rgba(100, 149, 237, 0.2)',
+                    borderColor: '#6495ed',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#6495ed',
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    min: 4,
+                    max: 8,
+                    ticks: { stepSize: 1, display: true, color: '#ccc' },
+                    angleLines: { color: '#333' },
+                    grid: { color: '#333' },
+                    pointLabels: { color: '#ccc', font: { size: 12 } }
+                }
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 11 }, padding: 20 } }
+            }
+        }
+    });
+}
+</script>
+</body>
+</html>
